@@ -1,54 +1,63 @@
-from flask import Flask, render_template, request
-from flask_sqlalchemy import SQLAlchemy
-import smtplib
+from flask import Flask, request, render_template
+import serverless_wsgi
 import os
-from email.mime.text import MIMEText
 from dotenv import load_dotenv
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///leads.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
-class Lead(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+EMAIL_ADDRESS = os.getenv('SENDER_EMAIL')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 
-def send_email(receiver_email):
-    sender_email = os.getenv('SENDER_EMAIL')
-    password = os.getenv('EMAIL_PASSWORD')
-    subject = "Tu ebook gratuito está aquí"
-    body = f"Gracias por registrarte! Descarga tu ebook aquí: [ENLACE_DE_EBOOK]\n\nAdemás, revisa esta oferta especial: [TU_LINK_DE_HOTMART]"
-
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, msg.as_string())
-    except Exception as e:
-        print(f"Error enviando email: {e}")
+LINK_GUIA = 'https://drive.google.com/file/d/tu-guia.pdf'
+LINK_VENTA = 'https://go.hotmart.com/tu-enlace-afiliado'
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    message = ''
     if request.method == 'POST':
         email = request.form.get('email')
-        if Lead.query.filter_by(email=email).first():
-            message = 'Este email ya está registrado.'
-        else:
-            new_lead = Lead(email=email)
-            db.session.add(new_lead)
-            db.session.commit()
-            send_email(email)
-            message = '¡Gracias! Revisa tu email para descargar el ebook.'
-    return render_template('index.html', message=message)
+        if email:
+            # Enviar email
+            try:
+                msg = MIMEMultipart()
+                msg['From'] = EMAIL_ADDRESS
+                msg['To'] = email
+                msg['Subject'] = 'Tu guía Mentalidad del Éxito'
 
-if __name__ == '__main__':
-    db.create_all()
-    app.run(host='0.0.0.0', port=5000)
+                body = f"""
+                Hola!
+
+                Gracias por solicitar tu guía gratuita "Mentalidad del Éxito".
+
+                ✅ DESCARGA tu guía aquí: {LINK_GUIA}
+
+                🔥 Además, te recomiendo el ebook completo que ha ayudado a miles:
+
+                👉 Consíguelo aquí: {LINK_VENTA}
+
+                ¡Éxito en tu camino!
+                """
+
+                msg.attach(MIMEText(body, 'plain'))
+
+                server = smtplib.SMTP('smtp.gmail.com', 587)
+                server.starttls()
+                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                server.send_message(msg)
+                server.quit()
+
+                return render_template('index.html', success=True)
+            except Exception as e:
+                return render_template('index.html', error=str(e))
+        else:
+            return render_template('index.html', error="Por favor ingresa un email válido.")
+    return render_template('index.html')
+
+def handler(event, context):
+    return serverless_wsgi.handle_request(app, event, context)
+if __name__ == "__main__":
+    app.run()

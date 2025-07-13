@@ -2,18 +2,62 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Descarga tu ebook gratis</title>
+    <title>Guía Gratis: Mentalidad del Éxito</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: #fff;
+            text-align: center;
+            padding: 50px;
+        }
+        form {
+            background: #ffffff10;
+            padding: 30px;
+            border-radius: 10px;
+            display: inline-block;
+            max-width: 400px;
+            width: 90%;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 5px;
+        }
+        input[type="submit"] {
+            background: #00c853;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .message {
+            margin-top: 20px;
+            font-size: 16px;
+            color: yellow;
+        }
+    </style>
 </head>
 <body>
-    <h1>¿Quieres aprender cómo [beneficio]?</h1>
-    <p>Descarga nuestro ebook gratis y aprende los secretos para [valor que ofreces].</p>
-    {% if message %}
-        <p style="color:green;">{{ message }}</p>
-    {% endif %}
-    <form method="POST" action="/">
-        <label for="email">Tu email:</label><br>
-        <input type="email" id="email" name="email" required><br>
-        <button type="submit">Quiero el ebook gratis</button>
+    <h1>🎯 Guía Gratis: Mentalidad del Éxito</h1>
+    <p>Descarga tu guía gratuita y comienza tu transformación personal hoy mismo.</p>
+    
+    <form method="POST">
+        <input type="email" name="email" placeholder="Tu mejor email" required>
+        <input type="submit" value="📩 Sí, quiero la guía gratis">
     </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 </body>
 </html>
